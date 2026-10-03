@@ -48,7 +48,7 @@
 | `scripts/build_demo_data.py` | Синтетический отдел: 4 менеджера, 90 сделок, звонки. Детерминированный seed | данные |
 | `demo_samples.py`, `demo_report.py` | Сохранённые ответы модели для режима без ключа | данные |
 | `api/index.py` | FastAPI на Vercel: `/api/analyze`, `/api/report`, `/api/health` | код |
-| `public/` | Интерфейс на чистом HTML/CSS/JS. Логика проверок повторена в `app.js` | UI |
+| `public/` | Чистый HTML/CSS/JS. `index.html` — лендинг, `demo.html` — демо (логика проверок повторена в `app.js`). Старые ссылки `/#report`, `/#call`, `/#how` перенаправляются в демо | UI |
 | `tests/` | 17 тестов: amoCRM на моках, схема, цитаты, аналитика, валидатор, API | |
 
 Стек: Python 3.12, FastAPI, Pydantic, Anthropic SDK, pytest, Vercel.

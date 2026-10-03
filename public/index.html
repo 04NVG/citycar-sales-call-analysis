@@ -2,182 +2,350 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Анализ отдела продаж</title>
-<meta name="description" content="Демо мультиагентной системы: анализ отдела продаж по amoCRM и звонкам. LLM интерпретирует, код считает и проверяет, человек решает.">
-<meta name="theme-color" content="#0E1A2B">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%230E1A2B'/><path d='M8 20.5c2.2-5 4.6-7.5 7-7.5s3.4 4 6 4c1.3 0 2.3-.7 3-2' stroke='%23F2B33D' stroke-width='2.6' fill='none' stroke-linecap='round'/></svg>">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Отдел продаж: агенты, которым можно доверять</title>
+<meta name="description" content="Мультиагентная система для анализа отдела продаж по amoCRM и звонкам. LLM интерпретирует, код считает и проверяет, человек решает. Демо к тестовому заданию CityCar.">
+<meta name="theme-color" content="#0B0B0D">
+<meta property="og:title" content="Агенты, которым можно доверять">
+<meta property="og:description" content="Одна фраза руководителя, девять шагов до решения. Каждое число в отчёте сверено кодом.">
+<meta property="og:type" content="website">
+<script>
+  /* Старые ссылки на демо (#report, #call, #how) ведут в демо, а не на лендинг. */
+  (function () {
+    var h = location.hash.slice(1).split("/")[0];
+    if (h === "report" || h === "call" || h === "how") location.replace("demo.html" + location.hash);
+    document.documentElement.className += " js";
+  })();
+</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%2314141A'/><path d='M8 20.5c2.2-5 4.6-7.5 7-7.5s3.4 4 6 4c1.3 0 2.3-.7 3-2' stroke='%23E8B04B' stroke-width='2.6' fill='none' stroke-linecap='round'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Onest:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="landing.css">
 </head>
 <body>
 <a class="skip" href="#main">К содержимому</a>
-<header class="topbar">
-  <div class="wrap topbar-in">
-    <a class="brand" href="#report" aria-label="На главную">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M8 20.5c2.2-5 4.6-7.5 7-7.5s3.4 4 6 4c1.3 0 2.3-.7 3-2"/></svg>
-      <span>Отдел продаж<small>демо к тестовому CityCar</small></span>
-    </a>
-    <nav class="nav" aria-label="Разделы">
-      <a href="#report" data-view="report">Анализ отдела</a>
-      <a href="#call" data-view="call">Разбор звонка</a>
-      <a href="#how" data-view="how">Как устроено</a>
-    </nav>
-    <div class="top-actions">
-      <button class="key-btn" id="keyBtn" type="button"><span class="led" id="keyLed"></span><span id="keyLabel">Ключ API</span></button>
-      <button class="icon-btn" id="themeBtn" type="button" aria-label="Сменить тему"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg></button>
-      <a class="icon-btn" href="https://github.com/04NVG/citycar-sales-call-analysis" target="_blank" rel="noopener" aria-label="Код на GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>
-    </div>
-  </div>
+<div class="grain" aria-hidden="true"></div>
+
+<!-- ============ Навигация: плавающий остров ============ -->
+<header class="island" id="island">
+  <a class="logo" href="#top" aria-label="Наверх">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M8 20.5c2.2-5 4.6-7.5 7-7.5s3.4 4 6 4c1.3 0 2.3-.7 3-2"/></svg>
+    <span>Отдел продаж</span>
+  </a>
+  <nav class="island-nav" aria-label="Разделы">
+    <a href="#principle">Принцип</a>
+    <a href="#agents">Агенты</a>
+    <a href="#live">Демо</a>
+    <a href="#call">Звонки</a>
+    <a href="#honest">Ограничения</a>
+  </nav>
+  <a class="island-cta" href="demo.html#report">Открыть демо</a>
+  <button class="burger" id="burger" type="button" aria-label="Меню" aria-expanded="false" aria-controls="menu"><i></i><i></i></button>
 </header>
 
+<div class="menu" id="menu" hidden>
+  <nav aria-label="Меню">
+    <a href="#principle" style="--i:0">Принцип</a>
+    <a href="#agents" style="--i:1">Агенты</a>
+    <a href="#live" style="--i:2">Живое демо</a>
+    <a href="#call" style="--i:3">Разбор звонка</a>
+    <a href="#honest" style="--i:4">Ограничения</a>
+  </nav>
+  <a class="btn-pill" href="demo.html#report" style="--i:5"><span>Открыть демо</span><span class="btn-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span></a>
+</div>
+
 <main id="main">
-  <!-- ============ Анализ отдела ============ -->
-  <section class="view" id="view-report" hidden>
-    <div class="wrap">
-      <div class="command">
-        <label class="command-who" for="cmd">Руководитель пишет системе</label>
-        <div class="command-box">
-          <textarea id="cmd" rows="2" spellcheck="false">Проанализируй работу отдела продаж за последние 30 дней</textarea>
-          <button class="run-btn" id="runBtn" type="button"><span class="run-ico" aria-hidden="true"></span><span id="runLabel">Запустить анализ</span></button>
-        </div>
-        <p class="command-note" id="cmdNote">Данные синтетические: 4 менеджера, 90 сделок, 155 звонков. Люди и клиенты выдуманы.</p>
-      </div>
+  <!-- ============ Первый экран ============ -->
+  <section class="hero" id="top">
+    <canvas class="hero-waves" id="waves" aria-hidden="true"></canvas>
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="wrap hero-in">
+      <p class="eyebrow hero-eyebrow">Демо к тестовому заданию CityCar</p>
+      <h1 class="hero-title">
+        <span class="w"><span>Агенты,</span></span>
+        <span class="w"><span>которым</span></span>
+        <span class="w"><span><em>можно доверять</em></span></span>
+      </h1>
+      <p class="hero-lead">Руководитель пишет одну фразу. Система поднимает amoCRM и&nbsp;звонки, считает метрики, пишет отчёт и&nbsp;сверяет в&nbsp;нём каждое число. Решения остаются за&nbsp;человеком.</p>
 
-      <ol class="trace" id="trace" aria-live="polite" hidden></ol>
-
-      <div id="report" hidden>
-        <div class="report-head">
-          <div>
-            <h1 class="report-title">Отдел продаж за 30 дней</h1>
-            <p class="report-sub" id="reportSub"></p>
+      <form class="console" id="console" action="demo.html" autocomplete="off">
+        <div class="console-shell">
+          <div class="console-core">
+            <label class="console-label" for="q">Руководитель пишет системе</label>
+            <div class="console-row">
+              <textarea id="q" name="q" rows="1" spellcheck="false" enterkeyhint="go">Проанализируй работу отдела продаж за последние 30 дней</textarea>
+              <button class="btn-pill" type="submit"><span>Запустить анализ</span><span class="btn-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
+            </div>
           </div>
-          <div class="verify" id="verifyBadge"></div>
         </div>
+        <p class="console-note">Без ключа API демо работает на сохранённых ответах модели. Проверки кода выполняются по-настоящему, прямо в&nbsp;браузере. <a href="demo.html#call">Или разберите звонок</a></p>
+      </form>
+    </div>
+  </section>
 
-        <div class="kpis" id="kpis"></div>
+  <!-- ============ Масштаб ============ -->
+  <section class="facts" aria-label="Что в демо">
+    <div class="wrap facts-row">
+      <div class="fact" data-reveal style="--i:0"><b data-count="90">90</b><span>сделок в&nbsp;amoCRM</span></div>
+      <div class="fact" data-reveal style="--i:1"><b data-count="142">142</b><span>звонка за&nbsp;30&nbsp;дней</span></div>
+      <div class="fact" data-reveal style="--i:2"><b data-count="121">121</b><span>разбор звонка моделью</span></div>
+      <div class="fact" data-reveal style="--i:3"><b data-count="31">31</b><span>число в&nbsp;отчёте сверено кодом</span></div>
+      <div class="fact" data-reveal style="--i:4"><b data-count="17">17</b><span>тестов pytest</span></div>
+    </div>
+  </section>
 
-        <div class="split">
-          <section class="block" aria-labelledby="aiTitle">
-            <header class="block-hd"><h2 id="aiTitle">Что видит AI</h2><span class="src llm">Интерпретация модели</span></header>
-            <p class="block-lead">Report Agent пишет только по фактам, которые посчитал код. Каждое число в тексте сверено, каждая ссылка ведёт на сделку или звонок.</p>
-            <ul class="insights" id="insights"></ul>
-          </section>
-          <section class="block decisions" aria-labelledby="decTitle">
-            <header class="block-hd"><h2 id="decTitle">Решения для руководителя</h2><span class="src human">Решает человек</span></header>
-            <p class="block-lead" id="decLead">Система предлагает, но ничего не меняет в CRM и не делает выводов о людях.</p>
-            <ul class="decision-list" id="decisions"></ul>
-          </section>
+  <!-- ============ Принцип ============ -->
+  <section class="principle" id="principle">
+    <div class="principle-track" id="manifestoTrack">
+      <div class="principle-pin">
+        <div class="wrap">
+          <p class="eyebrow">Принцип</p>
+          <p class="manifesto" id="manifesto"><span class="m-llm">LLM</span> интерпретирует. <span class="m-code">Код</span> считает и&nbsp;проверяет. <span class="m-human">Человек</span> решает.</p>
         </div>
+      </div>
+    </div>
 
-        <section class="block" aria-labelledby="mgrTitle">
-          <header class="block-hd"><h2 id="mgrTitle">Менеджеры</h2><span class="src code">Считает код</span></header>
-          <p class="block-lead">Подсвечены отклонения от медианы остальных менеджеров. Правило задано в коде, порог виден в подсказке.</p>
-          <div class="table-scroll"><table class="mgr" id="mgrTable"></table></div>
-        </section>
+    <div class="wrap roles">
+      <article class="role" data-reveal>
+        <header><span class="tag llm">LLM</span><h3><em>Модель</em></h3></header>
+        <p class="role-lead">Работает там, где данные неструктурированные: речь, свободный запрос, текст отчёта.</p>
+        <ul>
+          <li>Разбирает запрос руководителя в структуру: период, отдел, менеджеры.</li>
+          <li>Извлекает из звонка итог, следующий шаг, возражения и риски, со ссылками на&nbsp;цитаты.</li>
+          <li>Пишет интерпретацию и черновик рекомендаций только по&nbsp;fact pack.</li>
+        </ul>
+      </article>
+      <article class="role" data-reveal>
+        <header><span class="tag code">Код</span><h3><em>Код</em></h3></header>
+        <p class="role-lead">Считает всё, что можно посчитать. Поэтому цифры воспроизводимы, а выводы AI проверяемы.</p>
+        <ul>
+          <li>Синхронизирует amoCRM и телефонию: пагинация, лимит 7&nbsp;запросов в&nbsp;секунду, идемпотентность.</li>
+          <li>Считает метрики и аномалии, ищет сделки без задач и с&nbsp;просрочками.</li>
+          <li>Проверяет цитаты, сверяет числа отчёта с&nbsp;fact pack, решает, что уходит человеку.</li>
+        </ul>
+      </article>
+      <article class="role" data-reveal>
+        <header><span class="tag human">Человек</span><h3><em>Человек</em></h3></header>
+        <p class="role-lead">Принимает решения, которые меняют CRM или касаются людей.</p>
+        <ul>
+          <li>Утверждает рекомендации и любые действия с&nbsp;клиентами и в&nbsp;CRM.</li>
+          <li>Разбирает спорные звонки, прежде чем делать выводы о&nbsp;менеджере.</li>
+          <li>Задаёт справочники: менеджер и добавочный, правила связи звонков со&nbsp;сделками.</li>
+        </ul>
+      </article>
+    </div>
+  </section>
 
-        <section class="block" aria-labelledby="riskTitle">
-          <header class="block-hd"><h2 id="riskTitle">Сделки под риском</h2><span class="src code">Считает код</span></header>
-          <div class="filters" id="riskFilters" role="tablist"></div>
-          <div class="table-scroll"><table class="risk" id="riskTable"></table></div>
-        </section>
+  <!-- ============ Агенты ============ -->
+  <section class="agents" id="agents">
+    <div class="wrap agents-grid">
+      <div class="agents-head">
+        <div class="agents-sticky">
+          <p class="eyebrow" data-reveal>Журнал работы агентов</p>
+          <h2 class="h2" data-reveal>Одна фраза. <em>Девять шагов</em> до&nbsp;решения.</h2>
+          <p class="lead" data-reveal>Так выглядит прогон в демо. У каждого шага подписано, кто его сделал: модель, код или человек.</p>
+          <div class="agents-meter" aria-hidden="true">
+            <span class="agents-count"><b id="stepNow">1</b>/9</span>
+            <span class="agents-who" id="stepWho">Orchestrator</span>
+          </div>
+        </div>
+      </div>
+      <ol class="steps" id="steps">
+        <li class="step" data-src="llm"><span class="step-dot"></span><div><h3>Orchestrator <span class="tag llm">LLM</span></h3><p>Разбирает запрос в структуру: отдел продаж, 30&nbsp;дней, 4&nbsp;менеджера.</p><code>{"intent": "sales_department_review", "period_days": 30}</code></div></li>
+        <li class="step" data-src="code"><span class="step-dot"></span><div><h3>Проверка прав <span class="tag code">Код</span></h3><p>Роль: руководитель отдела. Доступ к данным 4&nbsp;менеджеров разрешён, запрос записан в журнал аудита.</p></div></li>
+        <li class="step" data-src="code"><span class="step-dot"></span><div><h3>CRM Sync <span class="tag code">Код</span></h3><p>Снимок amoCRM: 90&nbsp;сделок, 267&nbsp;задач. Изменения подтягиваются инкрементально по&nbsp;updated_at.</p></div></li>
+        <li class="step" data-src="code"><span class="step-dot"></span><div><h3>Telephony Adapter <span class="tag code">Код</span></h3><p>142&nbsp;звонка за период, 135 с записью. 14 не связаны ни с одной сделкой.</p></div></li>
+        <li class="step" data-src="llm"><span class="step-dot"></span><div><h3>STT и Call Analysis <span class="tag llm">LLM</span></h3><p>121&nbsp;разбор берётся из кэша по ключу: транскрипт, версия промпта, модель. Новых вызовов модели: 0.</p></div></li>
+        <li class="step" data-src="code"><span class="step-dot"></span><div><h3>Sales Analytics <span class="tag code">Код</span></h3><p>Fact pack: 75&nbsp;открытых сделок, 6&nbsp;отклонений от медианы, 30&nbsp;сделок под риском.</p></div></li>
+        <li class="step" data-src="llm"><span class="step-dot"></span><div><h3>Report Agent <span class="tag llm">LLM</span></h3><p>6&nbsp;наблюдений и 4&nbsp;рекомендации. Пишет только по фактам, которые посчитал код.</p></div></li>
+        <li class="step" data-src="code"><span class="step-dot"></span><div><h3>Validator <span class="tag code">Код</span></h3><p>Сверяет 31&nbsp;число с fact pack: расхождений нет. Все ссылки ведут на существующие сделки и звонки.</p></div></li>
+        <li class="step" data-src="human"><span class="step-dot"></span><div><h3>Человек в контуре <span class="tag human">Человек</span></h3><p>4&nbsp;решения ждут руководителя. В CRM ничего не изменено.</p></div></li>
+      </ol>
+    </div>
+  </section>
 
-        <section class="block quiet" aria-labelledby="gapTitle">
-          <header class="block-hd"><h2 id="gapTitle">Чего в отчёте нет и почему</h2></header>
-          <ul class="gaps" id="gaps"></ul>
-        </section>
+  <!-- ============ Живое демо в 3D-рамке ============ -->
+  <section class="live" id="live">
+    <div class="wrap live-head">
+      <p class="eyebrow" data-reveal>Живое демо</p>
+      <h2 class="h2" data-reveal>Отчёт, который <em>проверяет сам себя</em></h2>
+      <p class="lead" data-reveal>Это не скриншот. Ниже работает настоящее демо: прогон агентов, KPI, наблюдения с&nbsp;доказательствами и&nbsp;очередь решений.</p>
+    </div>
+    <div class="stage" id="stage">
+      <div class="device" id="device">
+        <div class="device-core">
+          <iframe id="liveFrame" title="Демо: анализ отдела продаж" data-src="demo.html?embed=1#report" loading="lazy"></iframe>
+          <button class="device-veil" id="veil" type="button"><span class="btn-pill as-span"><span>Нажмите, чтобы управлять</span><span class="btn-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 4v11l3-3 2.5 5 2-1-2.5-5H18z"/></svg></span></span></button>
+        </div>
+      </div>
+      <p class="stage-note"><a href="demo.html#report">Открыть демо на весь экран</a></p>
+    </div>
+  </section>
+
+  <!-- ============ Бенто: из чего состоит отчёт ============ -->
+  <section class="bento-sec" id="report">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow" data-reveal>Из чего состоит отчёт</p>
+        <h2 class="h2" data-reveal>Цифры считает код. <em>Слова пишет модель.</em></h2>
+      </div>
+      <div class="bento">
+        <article class="cell c-insight spot" data-reveal>
+          <div class="cell-core">
+            <header class="cell-hd"><span class="tag llm">Наблюдение модели</span><span class="verified" id="verified"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>31 число сверено</span></header>
+            <p class="insight" id="insight">У Дмитрия Ковалёва 9 из 19 открытых сделок (47%) без открытых задач, у остальных менеджеров медиана 6%. В 8 сделках последний звонок закончился договорённостью, но следующий шаг не зафиксирован в CRM.</p>
+            <div class="evidence" id="evidence" hidden><span>Доказательства, на которые ссылается модель</span><ul></ul></div>
+            <p class="cell-foot">Validator подсвечивает каждое число. Число, которого нет в&nbsp;fact pack, стало&nbsp;бы красным, и&nbsp;отчёт ушёл&nbsp;бы человеку на&nbsp;проверку.</p>
+          </div>
+        </article>
+
+        <article class="cell c-kpi spot" data-reveal style="--i:1">
+          <div class="cell-core">
+            <header class="cell-hd"><span class="tag code">Считает код</span></header>
+            <dl class="kpis">
+              <div><dt>Без открытых задач</dt><dd><b data-count="14">14</b><small>19%</small></dd></div>
+              <div><dt>С просроченными задачами</dt><dd><b data-count="16">16</b><small>21%</small></dd></div>
+              <div><dt>Обещано в звонке, задачи нет</dt><dd class="amber"><b data-count="10">10</b></dd></div>
+              <div><dt>Сделок под риском</dt><dd><b data-count="116">116</b><small>млн ₽</small></dd></div>
+            </dl>
+          </div>
+        </article>
+
+        <article class="cell c-chart spot" data-reveal style="--i:2">
+          <div class="cell-core">
+            <header class="cell-hd"><h3>Сделки без открытых задач</h3><span class="tag code">Отклонение от медианы</span></header>
+            <div class="bars" id="bars">
+              <div class="bar"><span>Анна Соколова</span><i style="--v:5"></i><b>5%</b></div>
+              <div class="bar flag"><span>Дмитрий Ковалёв</span><i style="--v:47"></i><b>47%</b></div>
+              <div class="bar"><span>Марина Лебедева</span><i style="--v:15"></i><b>15%</b></div>
+              <div class="bar"><span>Игорь Петров</span><i style="--v:6"></i><b>6%</b></div>
+            </div>
+            <p class="cell-foot">Правило задано в коде: менеджер заметно выше медианы остальных. Порог виден в&nbsp;подсказке в демо.</p>
+          </div>
+        </article>
+
+        <article class="cell c-decide spot" data-reveal style="--i:3">
+          <div class="cell-core">
+            <header class="cell-hd"><span class="tag human">Решает человек</span><span class="cell-owner">РОП</span></header>
+            <p class="decide-text" id="decideText">Разобрать с Дмитрием Ковалёвым 8 сделок, где договорённость есть в звонке, а задачи в CRM нет. Начать с самой крупной: 5&nbsp;060&nbsp;000&nbsp;₽.</p>
+            <div class="decide-acts" id="decideActs" role="group" aria-label="Решение">
+              <button type="button" data-v="yes">Утвердить</button>
+              <button type="button" data-v="later">Отложить</button>
+              <button type="button" data-v="no">Отклонить</button>
+            </div>
+            <p class="decide-state" id="decideState" aria-live="polite">Система предлагает, но ничего не меняет в CRM.</p>
+          </div>
+        </article>
+
+        <article class="cell c-gaps spot" data-reveal style="--i:4">
+          <div class="cell-core">
+            <header class="cell-hd"><h3>Чего в отчёте нет и почему</h3></header>
+            <ul class="gaps">
+              <li><b>План продаж</b>Его нет ни в amoCRM, ни в телефонии. Выполнение плана не оценивается.</li>
+              <li><b>Маржинальность</b>Её нет в источниках. Прибыльность сделок не считается.</li>
+              <li><b>Выводы о людях</b>За период закрыто всего 15 сделок. Для оценки менеджеров этого мало.</li>
+            </ul>
+          </div>
+        </article>
       </div>
     </div>
   </section>
 
   <!-- ============ Разбор звонка ============ -->
-  <section class="view" id="view-call" hidden>
-    <div class="wrap">
-      <div class="call-head">
-        <h1>Разбор звонка</h1>
-        <p>Модель заполняет строгую схему и ссылается на цитаты. Код проверяет каждую цитату по транскрипту и сверяет договорённость с задачами в CRM.</p>
+  <section class="callsec" id="call">
+    <div class="wrap call-grid">
+      <div class="call-copy">
+        <p class="eyebrow" data-reveal>Разбор звонка</p>
+        <h2 class="h2" data-reveal>Модель цитирует. <em>Код проверяет цитаты.</em></h2>
+        <p class="lead" data-reveal>Каждый вывод о звонке ссылается на фразу из транскрипта. Подмените фразу клиента или уберите задачу в CRM и посмотрите, как изменится маршрутизация.</p>
+        <div class="call-ctrl" data-reveal>
+          <label class="toggle"><input type="checkbox" id="tamper"><span class="track"></span><span>Изменить фразу клиента в&nbsp;транскрипте</span></label>
+          <label class="toggle"><input type="checkbox" id="task" checked><span class="track"></span><span>По сделке есть открытая задача в&nbsp;amoCRM</span></label>
+        </div>
+        <div class="verdict" id="verdict" aria-live="polite">
+          <span class="verdict-ico" aria-hidden="true"></span>
+          <div><b id="verdictTitle">Разбор подтверждён кодом</b><span id="verdictText">8 из 8 цитат найдены в транскрипте. Следующий шаг согласован, задача в CRM есть.</span></div>
+        </div>
       </div>
-      <div class="call-layout">
-        <aside class="call-side">
-          <div class="sample-list" id="sampleList" role="tablist" aria-label="Звонки"></div>
-          <details class="editor" id="editor">
-            <summary>Транскрипт <span>можно править</span></summary>
-            <textarea id="transcript" spellcheck="false" aria-label="Транскрипт звонка"></textarea>
-            <p class="hint">Формат строки: <code>[мм:сс] Менеджер: текст</code>. Измените фразу, на которую ссылается разбор, и нажмите «Проверить».</p>
-          </details>
-          <label class="switch"><input type="checkbox" id="hasTask"><span class="track"></span><span>По сделке есть открытая задача в amoCRM</span></label>
-          <div class="call-actions">
-            <button class="btn primary" id="checkBtn" type="button">Проверить</button>
-            <button class="btn ghost" id="liveBtn" type="button">Разобрать моделью</button>
-          </div>
-          <div class="err" id="callErr" role="alert" hidden></div>
-        </aside>
-        <div class="call-main" id="callMain"></div>
+
+      <div class="phone" data-reveal>
+        <div class="phone-core">
+          <header class="phone-hd">
+            <div><b>Первичный звонок: тест-драйв</b><span>Менеджер Дмитрий, 1 мин 30 с</span></div>
+            <span class="tag llm">Разбор модели</span>
+          </header>
+          <div class="chat" id="chat"></div>
+          <footer class="phone-ft" id="phoneFt">
+            <div><span>Итог</span><b>назначена встреча</b></div>
+            <div><span>Следующий шаг</span><b>тест-драйв в субботу</b></div>
+            <div><span>Возражение</span><b>цена, отработано частично</b></div>
+          </footer>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ============ Как устроено ============ -->
-  <section class="view" id="view-how" hidden>
-    <div class="wrap how">
-      <h1>Как устроено</h1>
-      <p class="how-lead">LLM нужна там, где данные неструктурированные: речь, свободный запрос, текст отчёта. Всё, что можно посчитать, считает код, поэтому цифры воспроизводимы, а выводы AI проверяемы.</p>
-      <div class="arch" id="arch"></div>
-      <div class="how-grid">
-        <div>
-          <h2>Модель</h2>
-          <ul class="plain">
-            <li>Разбирает запрос руководителя в структуру: период, отдел, менеджеры.</li>
-            <li>Извлекает из звонка итог, следующий шаг, возражения и риски, со ссылками на цитаты.</li>
-            <li>Пишет интерпретацию и черновик рекомендаций только по fact pack.</li>
-          </ul>
-        </div>
-        <div>
-          <h2>Код</h2>
-          <ul class="plain">
-            <li>Синхронизирует amoCRM и телефонию: пагинация, лимит 7 запросов в секунду, идемпотентность.</li>
-            <li>Считает все метрики и аномалии, ищет сделки без задач и с просрочками.</li>
-            <li>Проверяет цитаты, сверяет числа отчёта с fact pack, решает, что уходит человеку.</li>
-          </ul>
-        </div>
-        <div>
-          <h2>Человек</h2>
-          <ul class="plain">
-            <li>Утверждает рекомендации и любые действия с клиентами и в CRM.</li>
-            <li>Разбирает спорные звонки, прежде чем делать выводы о менеджере.</li>
-            <li>Задаёт справочники: менеджер и добавочный, правила связи звонков со сделками.</li>
-          </ul>
-        </div>
+  <!-- ============ Устройство ============ -->
+  <section class="arch" id="arch">
+    <div class="wrap arch-grid">
+      <div class="sec-head">
+        <p class="eyebrow" data-reveal>Устройство</p>
+        <h2 class="h2" data-reveal>Небольшой код, <em>понятные роли</em></h2>
+        <p class="lead" data-reveal>Python 3.12, FastAPI, Pydantic, Anthropic SDK, pytest, Vercel. Интерфейс на чистом HTML, CSS и&nbsp;JS.</p>
       </div>
-      <p class="how-links"><a href="https://github.com/04NVG/citycar-sales-call-analysis" target="_blank" rel="noopener">Код и тесты на GitHub</a><a href="https://github.com/04NVG/citycar-sales-call-analysis/blob/main/citycar_answer.md" target="_blank" rel="noopener">Ответ на тестовое задание</a></p>
+      <ul class="files">
+        <li data-reveal><code>amo_leads_attention.py</code><span>Сделки без задач или с просрочкой через amoCRM API v4. 48 строк.</span><i class="tag code">Код</i></li>
+        <li data-reveal><code>sales_analytics.py</code><span>Метрики, аномалии, сделки под риском, связь «обещание и задача».</span><i class="tag code">Код</i></li>
+        <li data-reveal><code>call_analysis.py</code><span>Схема разбора звонка, проверка цитат, маршрутизация на ревью.</span><i class="tag code">Код</i></li>
+        <li data-reveal><code>report_validator.py</code><span>Числа в тексте отчёта входят в fact pack, ссылки ведут на существующие сделки и звонки.</span><i class="tag code">Код</i></li>
+        <li data-reveal><code>llm.py</code><span>Call Analysis и Report Agent: Claude API, structured output по Pydantic-схемам.</span><i class="tag llm">LLM</i></li>
+        <li data-reveal><code>api/index.py</code><span>FastAPI на Vercel: /api/analyze, /api/report, /api/health.</span><i class="tag code">Код</i></li>
+        <li data-reveal><code>tests/</code><span>17 тестов: amoCRM на моках, схема, цитаты, аналитика, валидатор, API.</span><i class="tag code">Код</i></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ Ограничения ============ -->
+  <section class="honest" id="honest">
+    <div class="wrap honest-grid">
+      <div class="sec-head">
+        <p class="eyebrow" data-reveal>Ограничения</p>
+        <h2 class="h2" data-reveal>Что в демо <em>не настоящее</em></h2>
+      </div>
+      <ul class="honest-list">
+        <li data-reveal><b>Данные синтетические.</b> Люди, клиенты, сделки и звонки выдуманы. STT по аудио, PostgreSQL, очереди и авторизация описаны в архитектуре, но в демо не реализованы.</li>
+        <li data-reveal><b>amoCRM проверен на моках.</b> Код сверен с документацией API v4, на реальном аккаунте его не запускали.</li>
+        <li data-reveal><b>Сохранённые ответы модели</b> написаны Claude и проходят те же проверки, что и живые.</li>
+        <li data-reveal><b>Validator сверяет числа с множеством всех чисел fact pack.</b> Число, которое случайно совпало с другим значением, он не поймает. Следующий шаг: ссылки «число → поле fact pack» в structured output.</li>
+        <li data-reveal><b>Ключ посетителя</b> не сохраняется и не логируется. Лимит живых запросов на серверном ключе хранится в памяти инстанса.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ Финал ============ -->
+  <section class="final">
+    <div class="final-glow" aria-hidden="true"></div>
+    <div class="wrap final-in">
+      <h2 class="final-title" data-reveal>Посмотрите, как это <em>работает</em></h2>
+      <p class="lead" data-reveal>Запустите анализ отдела, откройте доказательства, примите решения. Без регистрации и без ключа API.</p>
+      <div class="final-acts" data-reveal>
+        <a class="btn-pill magnetic" href="demo.html#report"><span>Открыть демо</span><span class="btn-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span></a>
+        <a class="btn-ghost" href="https://github.com/04NVG/citycar-sales-call-analysis" target="_blank" rel="noopener">Код на GitHub</a>
+        <a class="btn-ghost" href="https://github.com/04NVG/citycar-sales-call-analysis/blob/main/citycar_answer.md" target="_blank" rel="noopener">Ответ на задание</a>
+      </div>
     </div>
   </section>
 </main>
 
-<div class="drawer-scrim" id="scrim" hidden></div>
-<aside class="drawer" id="drawer" aria-modal="true" role="dialog" aria-labelledby="drawerTitle" hidden>
-  <header><h2 id="drawerTitle"></h2><button class="icon-btn" id="drawerClose" type="button" aria-label="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
-  <div class="drawer-body" id="drawerBody"></div>
-</aside>
+<footer class="foot">
+  <div class="wrap foot-in">
+    <a class="logo" href="#top" aria-label="Наверх"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M8 20.5c2.2-5 4.6-7.5 7-7.5s3.4 4 6 4c1.3 0 2.3-.7 3-2"/></svg><span>Отдел продаж</span></a>
+    <p>Данные синтетические: люди, клиенты, сделки и звонки выдуманы.</p>
+    <nav aria-label="Ссылки"><a href="demo.html#report">Анализ отдела</a><a href="demo.html#call">Разбор звонка</a><a href="demo.html#how">Как устроено</a></nav>
+  </div>
+</footer>
 
-<dialog class="keydlg" id="keyDlg" aria-labelledby="keyTitle">
-  <form method="dialog" id="keyForm">
-    <h2 id="keyTitle">Живой режим</h2>
-    <p>Без ключа отчёт и разборы показаны из сохранённых ответов модели, а все проверки кода работают по-настоящему. С ключом Anthropic API модель разберёт ваш звонок и заново напишет отчёт.</p>
-    <label for="keyInput">Ключ Anthropic API</label>
-    <input id="keyInput" type="password" autocomplete="off" placeholder="sk-ant-…" spellcheck="false">
-    <p class="hint">Ключ хранится только в этой вкладке и передаётся серверу демо в заголовке одного запроса. Сервер его не сохраняет и не логирует. Лучше использовать ключ с лимитом расходов.</p>
-    <p class="hint" id="serverKeyNote"></p>
-    <div class="dlg-actions">
-      <button class="btn ghost" value="clear" type="submit" id="keyClear">Удалить ключ</button>
-      <button class="btn ghost" value="cancel" type="submit">Отмена</button>
-      <button class="btn primary" value="save" type="submit">Сохранить</button>
-    </div>
-  </form>
-</dialog>
-
-<script src="app.js" defer></script>
+<script src="landing.js" defer></script>
 </body>
 </html>

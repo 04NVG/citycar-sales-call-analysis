@@ -52,6 +52,10 @@ const live = () => Boolean(S.key || S.health.server_key);
 /* ================= boot ================= */
 async function boot() {
   initTheme();
+  // Запрос из консоли лендинга (?q=) и режим встраивания в лендинг (?embed=1).
+  const params = new URLSearchParams(location.search);
+  if (params.get("q")) $("#cmd").value = params.get("q").slice(0, 300);
+  if (params.has("embed")) { document.documentElement.classList.add("embed"); $(".brand").target = "_top"; }
   $("#themeBtn").addEventListener("click", toggleTheme);
   $("#keyBtn").addEventListener("click", openKeyDialog);
   $("#keyForm").addEventListener("submit", onKeySubmit);
@@ -113,8 +117,8 @@ function route() {
 }
 
 function initTheme() {
-  const t = store.get("theme");
-  if (t) document.documentElement.dataset.theme = t;
+  // По умолчанию тёмная тема, как на лендинге. Выбор посетителя запоминается.
+  document.documentElement.dataset.theme = store.get("theme") || "dark";
 }
 function toggleTheme() {
   const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");

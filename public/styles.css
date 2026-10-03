@@ -1,34 +1,39 @@
-/* Палитра: холодная бумага и тёмно-синие чернила (как приборная панель), синий сигнал для действий,
-   янтарь — «решает человек», красный — просрочка. Фиолетовый = модель, бирюзовый = код: это смысл, не декор. */
+/* Палитра общая с лендингом: тёплый графит и янтарь из логотипа. Цвета источников несут смысл:
+   лаванда = модель, мята = код, янтарь = решает человек, красный = просрочка. */
 :root {
-  --paper: #F2F4F7; --sheet: #FFFFFF; --sheet-2: #F7F8FA; --line: #DDE2E9; --line-2: #EBEEF2;
-  --ink: #0E1A2B; --ink-2: #3A4A60; --mute: #66768C; --faint: #94A1B2;
-  --signal: #2346D8; --signal-ink: #FFFFFF; --signal-soft: #E7ECFD;
-  --llm: #6B3FD8; --llm-soft: #EFE9FC; --code: #0B7F70; --code-soft: #E2F3F0; --human: #A86400; --human-soft: #FDF1DC;
-  --ok: #18794A; --ok-soft: #E3F4EA; --bad: #C2321E; --bad-soft: #FCE8E5; --warn: #A86400; --warn-soft: #FDF1DC;
-  --mgr: #2346D8; --cus: #0B7F70; --mark: #FFE58A; --mark-ink: #0E1A2B;
-  --brand-bg: #0E1A2B; --r-lg: 18px; --r-md: 12px; --r-sm: 8px;
-  --font: "Onest", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  --paper: #F3F1EC; --sheet: #FFFFFF; --sheet-2: #F7F5F1; --line: #E2DED6; --line-2: #ECE9E3;
+  --ink: #15151A; --ink-2: #44423D; --mute: #76726A; --faint: #A39E95;
+  --signal: #8A5A00; --signal-ink: #FFFFFF; --signal-soft: #F8EBD2;
+  --llm: #6A4FD0; --llm-soft: #EEEAFB; --code: #0A7A68; --code-soft: #E1F2EE; --human: #9A6200; --human-soft: #FAEED6;
+  --ok: #1E7A48; --ok-soft: #E3F2E8; --bad: #BE3A26; --bad-soft: #FAE6E2; --warn: #9A6200; --warn-soft: #FAEED6;
+  --mgr: #4A5BB8; --cus: #0A7A68; --mark: #FBE3A6; --mark-ink: #15151A;
+  --brand-bg: #15151A; --btn: #15151A; --btn-ink: #F3F1EC; --shell: rgba(21, 21, 26, .03); --island: rgba(255, 255, 255, .7);
+  --r-lg: 24px; --r-md: 16px; --r-sm: 10px;
+  --font: "Onest", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --serif: "Cormorant Garamond", "Times New Roman", serif;
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --ease: cubic-bezier(.23, 1, .32, 1); --ease-fluid: cubic-bezier(.32, .72, 0, 1);
   color-scheme: light;
 }
 :root[data-theme="dark"] {
-  --paper: #0B1320; --sheet: #111B2B; --sheet-2: #152134; --line: #23324A; --line-2: #1B283D;
-  --ink: #E9EEF6; --ink-2: #C3CDDB; --mute: #8D9BB0; --faint: #66758C;
-  --signal: #7D9BFF; --signal-ink: #0B1320; --signal-soft: #1A2748;
-  --llm: #B696FF; --llm-soft: #251C40; --code: #4FD1BE; --code-soft: #0F2E2B; --human: #F2B33D; --human-soft: #33270F;
-  --ok: #5CD08F; --ok-soft: #12301F; --bad: #FF8A7A; --bad-soft: #3A1A16; --warn: #F2B33D; --warn-soft: #33270F;
-  --mgr: #7D9BFF; --cus: #4FD1BE; --mark: #5C4A0E; --mark-ink: #FFF3C4; --brand-bg: #1B2A44;
-  color-scheme: dark;
+  --paper: #0B0B0D; --sheet: #141418; --sheet-2: #1B1B20; --line: rgba(237, 234, 227, .1); --line-2: rgba(237, 234, 227, .065);
+    --ink: #EDEAE3; --ink-2: #BDB8AE; --mute: #8C877E; --faint: #5E5A54;
+    --signal: #E8B04B; --signal-ink: #0B0B0D; --signal-soft: rgba(232, 176, 75, .12);
+    --llm: #AE9BF4; --llm-soft: rgba(174, 155, 244, .12); --code: #62CDB6; --code-soft: rgba(98, 205, 182, .11); --human: #E8B04B; --human-soft: rgba(232, 176, 75, .12);
+    --ok: #7FD39C; --ok-soft: rgba(127, 211, 156, .12); --bad: #F08A78; --bad-soft: rgba(240, 138, 120, .13); --warn: #E8B04B; --warn-soft: rgba(232, 176, 75, .12);
+    --mgr: #8E9BD8; --cus: #62CDB6; --mark: rgba(232, 176, 75, .24); --mark-ink: #F6E7C4; --brand-bg: #1C1C22;
+    --btn: #EDEAE3; --btn-ink: #0B0B0D; --shell: rgba(237, 234, 227, .03); --island: rgba(18, 18, 22, .62);
+    color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #0B1320; --sheet: #111B2B; --sheet-2: #152134; --line: #23324A; --line-2: #1B283D;
-    --ink: #E9EEF6; --ink-2: #C3CDDB; --mute: #8D9BB0; --faint: #66758C;
-    --signal: #7D9BFF; --signal-ink: #0B1320; --signal-soft: #1A2748;
-    --llm: #B696FF; --llm-soft: #251C40; --code: #4FD1BE; --code-soft: #0F2E2B; --human: #F2B33D; --human-soft: #33270F;
-    --ok: #5CD08F; --ok-soft: #12301F; --bad: #FF8A7A; --bad-soft: #3A1A16; --warn: #F2B33D; --warn-soft: #33270F;
-    --mgr: #7D9BFF; --cus: #4FD1BE; --mark: #5C4A0E; --mark-ink: #FFF3C4; --brand-bg: #1B2A44;
+    --paper: #0B0B0D; --sheet: #141418; --sheet-2: #1B1B20; --line: rgba(237, 234, 227, .1); --line-2: rgba(237, 234, 227, .065);
+    --ink: #EDEAE3; --ink-2: #BDB8AE; --mute: #8C877E; --faint: #5E5A54;
+    --signal: #E8B04B; --signal-ink: #0B0B0D; --signal-soft: rgba(232, 176, 75, .12);
+    --llm: #AE9BF4; --llm-soft: rgba(174, 155, 244, .12); --code: #62CDB6; --code-soft: rgba(98, 205, 182, .11); --human: #E8B04B; --human-soft: rgba(232, 176, 75, .12);
+    --ok: #7FD39C; --ok-soft: rgba(127, 211, 156, .12); --bad: #F08A78; --bad-soft: rgba(240, 138, 120, .13); --warn: #E8B04B; --warn-soft: rgba(232, 176, 75, .12);
+    --mgr: #8E9BD8; --cus: #62CDB6; --mark: rgba(232, 176, 75, .24); --mark-ink: #F6E7C4; --brand-bg: #1C1C22;
+    --btn: #EDEAE3; --btn-ink: #0B0B0D; --shell: rgba(237, 234, 227, .03); --island: rgba(18, 18, 22, .62);
     color-scheme: dark;
   }
 }
@@ -331,3 +336,86 @@ details.raw pre { font: 12px/1.55 var(--mono); background: var(--sheet-2); borde
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ================= общий визуальный язык с лендингом ================= */
+body { -webkit-font-smoothing: antialiased; }
+::selection { background: var(--mark); color: var(--mark-ink); }
+:focus-visible { outline-color: var(--human); }
+.view:not([hidden]) { animation: viewin .6s var(--ease) both; }
+@keyframes viewin { from { opacity: 0; transform: translateY(10px); } }
+
+h1 em { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: 1.1em; letter-spacing: -0.01em; color: var(--human); }
+.report-title { font-size: clamp(32px, 4vw, 52px); font-weight: 500; letter-spacing: -0.045em; line-height: 1; }
+.call-head h1, .how h1 { font-size: clamp(38px, 5.4vw, 68px); font-weight: 500; letter-spacing: -0.05em; line-height: 1; margin-bottom: 16px; }
+.block-hd h2, .panel-hd h3 { font-weight: 500; letter-spacing: -0.02em; }
+.block-hd h2 { font-size: 21px; }
+
+/* навигация: плавающий остров */
+.topbar { top: 12px; margin: 12px auto 0; width: min(calc(100% - 24px), 1216px); border-radius: 999px; border: 1px solid var(--line);
+  background: var(--island); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 20px 40px -28px rgba(0, 0, 0, .55);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); }
+.topbar .wrap { max-width: none; padding: 0 8px 0 16px; }
+.topbar-in { height: 60px; }
+.brand svg path { stroke: #E8B04B; }
+.nav a { border-radius: 999px; padding: 8px 14px; transition: background .25s var(--ease), color .25s var(--ease); }
+.nav a:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.nav a[aria-current="page"] { background: color-mix(in srgb, var(--ink) 9%, transparent); box-shadow: none; font-weight: 500; }
+.key-btn, .icon-btn { border-radius: 999px; background: transparent; transition: background .25s var(--ease), transform .16s var(--ease); }
+.key-btn { min-height: 40px; padding: 0 14px; }
+.icon-btn { width: 40px; height: 40px; }
+.key-btn:hover, .icon-btn:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.key-btn:active, .icon-btn:active { transform: scale(.95); }
+@media (max-width: 860px) {
+  .topbar { border-radius: 26px; }
+  .topbar .wrap { padding: 0 10px 0 14px; }
+  .topbar-in { height: auto; }
+}
+
+/* команда руководителя: двойной безель */
+.command { padding: 64px 0 32px; }
+.command-box { border: 0; border-radius: 30px; background: var(--sheet);
+  box-shadow: 0 0 0 6px var(--shell), 0 0 0 7px var(--line), inset 0 1px 0 rgba(255, 255, 255, .05); }
+.command-box::before { color: var(--human); font-family: var(--serif); font-style: italic; }
+#cmd { font-weight: 500; letter-spacing: -0.035em; caret-color: var(--human); }
+
+/* кнопки: пилюли с физикой нажатия */
+.run-btn, .btn.primary { background: var(--btn); color: var(--btn-ink); }
+.run-btn { border-radius: 999px; padding: 16px 24px; font-weight: 600; transition: transform .16s var(--ease), opacity .2s; }
+.run-btn:active, .btn:active, .chipbtn:active, .filter:active, .sample:active { transform: scale(.97); }
+.btn { border-radius: 999px; padding: 11px 18px; transition: transform .16s var(--ease), background .25s var(--ease); }
+.btn.ghost { background: transparent; }
+.btn.ghost:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.chipbtn { border-radius: 999px; padding: 7px 13px; transition: transform .16s var(--ease), border-color .2s; }
+.filter { transition: transform .16s var(--ease), background .2s; }
+
+/* поверхности */
+.block, .panel, .timeline, .editor, .arch { border-radius: var(--r-lg); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035); }
+.block { padding: 26px; }
+.kpis { border-radius: 26px; box-shadow: 0 0 0 6px var(--shell), 0 0 0 7px var(--line-2); border-color: var(--line); }
+.kpi { transition: background .25s var(--ease); }
+.kpi .v { font-weight: 500; letter-spacing: -0.05em; font-size: 40px; }
+.verify, .verdict, .empty, .keydlg { border-radius: var(--r-lg); }
+.sample { border-radius: var(--r-md); transition: border-color .25s var(--ease), box-shadow .25s var(--ease), transform .16s var(--ease); }
+.sample[aria-selected="true"] { border-color: var(--human); box-shadow: 0 0 0 3px var(--human-soft); }
+.decision { border-radius: var(--r-md); }
+.bubble { border-radius: 18px; }
+.bubble.manager { background: var(--sheet-2); box-shadow: inset 0 0 0 1px var(--line-2); }
+.src { border: 1px solid color-mix(in srgb, currentColor 26%, transparent); font-weight: 500; }
+.trace .t { color: var(--mute); }
+
+/* боковая панель и диалог */
+.drawer-scrim { background: rgba(5, 5, 8, .5); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.drawer { border-radius: 28px 0 0 28px; animation: slidein .45s var(--ease-fluid); box-shadow: -30px 0 60px -30px rgba(0, 0, 0, .5); }
+@media (max-width: 600px) { .drawer { border-radius: 0; } }
+.keydlg { box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .6); }
+.keydlg::backdrop { background: rgba(5, 5, 8, .55); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.keydlg input { border-radius: 14px; }
+
+/* встраивание в лендинг */
+.embed .topbar { top: 8px; margin-top: 8px; }
+.embed .command { padding-top: 40px; }
+.trace .msg { min-width: 0; }
+@media (max-width: 760px) { .trace li { grid-template-columns: minmax(0, 1fr); } }
+/* табличные цифры только там, где колонки чисел выравниваются */
+body { font-feature-settings: normal; }
+table, .trace .t, .ticks, .kpi .v small { font-variant-numeric: tabular-nums; }
