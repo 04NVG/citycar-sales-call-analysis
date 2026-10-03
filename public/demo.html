@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Демо: анализ отдела продаж</title>
+<meta name="description" content="Демо мультиагентной системы: анализ отдела продаж по amoCRM и звонкам. LLM интерпретирует, код считает и проверяет, человек решает.">
+<meta name="theme-color" content="#0B0B0D">
+<script>try { document.documentElement.dataset.theme = JSON.parse(localStorage.getItem("theme")) || "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; }</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%2314141A'/><path d='M8 20.5c2.2-5 4.6-7.5 7-7.5s3.4 4 6 4c1.3 0 2.3-.7 3-2' stroke='%23E8B04B' stroke-width='2.6' fill='none' stroke-linecap='round'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Onest:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">К содержимому</a>
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="brand" href="./" aria-label="На главную">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M8 20.5c2.2-5 4.6-7.5 7-7.5s3.4 4 6 4c1.3 0 2.3-.7 3-2"/></svg>
+      <span>Отдел продаж<small>демо</small></span>
+    </a>
+    <nav class="nav" aria-label="Разделы">
+      <a href="#report" data-view="report">Анализ отдела</a>
+      <a href="#call" data-view="call">Разбор звонка</a>
+      <a href="#how" data-view="how">Как устроено</a>
+    </nav>
+    <div class="top-actions">
+      <button class="key-btn" id="keyBtn" type="button"><span class="led" id="keyLed"></span><span id="keyLabel">Ключ API</span></button>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Сменить тему"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg></button>
+      <a class="icon-btn" href="https://github.com/04NVG/citycar-sales-call-analysis" target="_blank" rel="noopener" aria-label="Код на GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <!-- ============ Анализ отдела ============ -->
+  <section class="view" id="view-report" hidden>
+    <div class="wrap">
+      <div class="command">
+        <label class="command-who" for="cmd">Руководитель пишет системе</label>
+        <div class="command-box">
+          <textarea id="cmd" rows="2" spellcheck="false">Проанализируй работу отдела продаж за последние 30 дней</textarea>
+          <button class="run-btn" id="runBtn" type="button"><span class="run-ico" aria-hidden="true"></span><span id="runLabel">Запустить анализ</span></button>
+        </div>
+        <p class="command-note" id="cmdNote">Данные синтетические: 4 менеджера, 90 сделок, 155 звонков. Люди и клиенты выдуманы.</p>
+      </div>
+
+      <ol class="trace" id="trace" aria-live="polite" hidden></ol>
+
+      <div id="report" hidden>
+        <div class="report-head">
+          <div>
+            <h1 class="report-title">Отдел продаж <em>за 30 дней</em></h1>
+            <p class="report-sub" id="reportSub"></p>
+          </div>
+          <div class="verify" id="verifyBadge"></div>
+        </div>
+
+        <div class="kpis" id="kpis"></div>
+
+        <div class="split">
+          <section class="block" aria-labelledby="aiTitle">
+            <header class="block-hd"><h2 id="aiTitle">Что видит AI</h2><span class="src llm">Интерпретация модели</span></header>
+            <p class="block-lead">Report Agent пишет только по фактам, которые посчитал код. Каждое число в тексте сверено, каждая ссылка ведёт на сделку или звонок.</p>
+            <ul class="insights" id="insights"></ul>
+          </section>
+          <section class="block decisions" aria-labelledby="decTitle">
+            <header class="block-hd"><h2 id="decTitle">Решения для руководителя</h2><span class="src human">Решает человек</span></header>
+            <p class="block-lead" id="decLead">Система предлагает, но ничего не меняет в CRM и не делает выводов о людях.</p>
+            <ul class="decision-list" id="decisions"></ul>
+          </section>
+        </div>
+
+        <section class="block" aria-labelledby="mgrTitle">
+          <header class="block-hd"><h2 id="mgrTitle">Менеджеры</h2><span class="src code">Считает код</span></header>
+          <p class="block-lead">Подсвечены отклонения от медианы остальных менеджеров. Правило задано в коде, порог виден в подсказке.</p>
+          <div class="table-scroll"><table class="mgr" id="mgrTable"></table></div>
+        </section>
+
+        <section class="block" aria-labelledby="riskTitle">
+          <header class="block-hd"><h2 id="riskTitle">Сделки под риском</h2><span class="src code">Считает код</span></header>
+          <div class="filters" id="riskFilters" role="tablist"></div>
+          <div class="table-scroll"><table class="risk" id="riskTable"></table></div>
+        </section>
+
+        <section class="block quiet" aria-labelledby="gapTitle">
+          <header class="block-hd"><h2 id="gapTitle">Чего в отчёте нет и почему</h2></header>
+          <ul class="gaps" id="gaps"></ul>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Разбор звонка ============ -->
+  <section class="view" id="view-call" hidden>
+    <div class="wrap">
+      <div class="call-head">
+        <h1>Разбор <em>звонка</em></h1>
+        <p>Модель заполняет строгую схему и ссылается на цитаты. Код проверяет каждую цитату по транскрипту и сверяет договорённость с задачами в CRM.</p>
+      </div>
+      <div class="call-layout">
+        <aside class="call-side">
+          <div class="sample-list" id="sampleList" role="tablist" aria-label="Звонки"></div>
+          <details class="editor" id="editor">
+            <summary>Транскрипт <span>можно править</span></summary>
+            <textarea id="transcript" spellcheck="false" aria-label="Транскрипт звонка"></textarea>
+            <p class="hint">Формат строки: <code>[мм:сс] Менеджер: текст</code>. Измените фразу, на которую ссылается разбор, и нажмите «Проверить».</p>
+          </details>
+          <label class="switch"><input type="checkbox" id="hasTask"><span class="track"></span><span>По сделке есть открытая задача в amoCRM</span></label>
+          <div class="call-actions">
+            <button class="btn primary" id="checkBtn" type="button">Проверить</button>
+            <button class="btn ghost" id="liveBtn" type="button">Разобрать моделью</button>
+          </div>
+          <div class="err" id="callErr" role="alert" hidden></div>
+        </aside>
+        <div class="call-main" id="callMain"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Как устроено ============ -->
+  <section class="view" id="view-how" hidden>
+    <div class="wrap how">
+      <h1>Как <em>устроено</em></h1>
+      <p class="how-lead">LLM нужна там, где данные неструктурированные: речь, свободный запрос, текст отчёта. Всё, что можно посчитать, считает код, поэтому цифры воспроизводимы, а выводы AI проверяемы.</p>
+      <div class="arch" id="arch"></div>
+      <div class="how-grid">
+        <div>
+          <h2>Модель</h2>
+          <ul class="plain">
+            <li>Разбирает запрос руководителя в структуру: период, отдел, менеджеры.</li>
+            <li>Извлекает из звонка итог, следующий шаг, возражения и риски, со ссылками на цитаты.</li>
+            <li>Пишет интерпретацию и черновик рекомендаций только по fact pack.</li>
+          </ul>
+        </div>
+        <div>
+          <h2>Код</h2>
+          <ul class="plain">
+            <li>Синхронизирует amoCRM и телефонию: пагинация, лимит 7 запросов в секунду, идемпотентность.</li>
+            <li>Считает все метрики и аномалии, ищет сделки без задач и с просрочками.</li>
+            <li>Проверяет цитаты, сверяет числа отчёта с fact pack, решает, что уходит человеку.</li>
+          </ul>
+        </div>
+        <div>
+          <h2>Человек</h2>
+          <ul class="plain">
+            <li>Утверждает рекомендации и любые действия с клиентами и в CRM.</li>
+            <li>Разбирает спорные звонки, прежде чем делать выводы о менеджере.</li>
+            <li>Задаёт справочники: менеджер и добавочный, правила связи звонков со сделками.</li>
+          </ul>
+        </div>
+      </div>
+      <p class="how-links"><a href="https://github.com/04NVG/citycar-sales-call-analysis" target="_blank" rel="noopener">Код и тесты на GitHub</a><a href="https://github.com/04NVG/citycar-sales-call-analysis/blob/main/citycar_answer.md" target="_blank" rel="noopener">Ответ на тестовое задание</a></p>
+    </div>
+  </section>
+</main>
+
+<div class="drawer-scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" aria-modal="true" role="dialog" aria-labelledby="drawerTitle" hidden>
+  <header><h2 id="drawerTitle"></h2><button class="icon-btn" id="drawerClose" type="button" aria-label="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+
+<dialog class="keydlg" id="keyDlg" aria-labelledby="keyTitle">
+  <form method="dialog" id="keyForm">
+    <h2 id="keyTitle">Живой режим</h2>
+    <p>Без ключа отчёт и разборы показаны из сохранённых ответов модели, а все проверки кода работают по-настоящему. С ключом Anthropic API модель разберёт ваш звонок и заново напишет отчёт.</p>
+    <label for="keyInput">Ключ Anthropic API</label>
+    <input id="keyInput" type="password" autocomplete="off" placeholder="sk-ant-…" spellcheck="false">
+    <p class="hint">Ключ хранится только в этой вкладке и передаётся серверу демо в заголовке одного запроса. Сервер его не сохраняет и не логирует. Лучше использовать ключ с лимитом расходов.</p>
+    <p class="hint" id="serverKeyNote"></p>
+    <div class="dlg-actions">
+      <button class="btn ghost" value="clear" type="submit" id="keyClear">Удалить ключ</button>
+      <button class="btn ghost" value="cancel" type="submit">Отмена</button>
+      <button class="btn primary" value="save" type="submit">Сохранить</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js" defer></script>
+</body>
+</html>
