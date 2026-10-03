@@ -37,4 +37,4 @@ def test_api_routes_promise_without_task_to_review(monkeypatch):
     assert broken["analysis"]["unverified_evidence"] == ["e4"]
 
     assert client.post("/api/analyze", json={**body, "mode": "live"}).status_code == 503
-    assert client.get("/api/health").json()["live"] is False
+    assert client.get("/api/health").json()["server_key"] is False
