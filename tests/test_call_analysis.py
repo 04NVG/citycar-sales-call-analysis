@@ -2,7 +2,7 @@
 import pytest
 from pydantic import ValidationError
 
-from call_analysis import CallAnalysis, route_for_review, unverified_evidence
+from call_analysis import CRM_GAP_TEXT, CallAnalysis, CallExtraction, route_for_review, unverified_evidence
 
 SEGMENTS = [
     {"speaker": "manager", "start": 0.0, "end": 6.0, "text": "Добрый день, меня зовут Анна, компания."},
@@ -11,28 +11,31 @@ SEGMENTS = [
     {"speaker": "customer", "start": 188.5, "end": 190.0, "text": "Да, договорились."},
 ]
 
+EXTRACTION = {
+    "analyzable": True, "skip_reason": None, "call_type": "first_contact",
+    "summary": "Клиент считает цену высокой, договорились о повторном звонке с расчётом.",
+    "customer_intent": None, "qualification": None,
+    "outcome": {"value": "callback", "confidence": 0.9, "evidence": ["e2"]},
+    "next_step": {"agreed": True, "what": "перезвонить с расчётом", "when_mentioned": "в пятницу",
+                  "evidence": ["e2", "e3"]},
+    "objections": [{"type": "price", "handled": "partially", "evidence": ["e1"]}],
+    "script_checklist": [], "risks": [],
+    "evidence": [
+        {"id": "e1", "speaker": "customer", "start_sec": 7.0, "quote": "у вас дороговато"},
+        {"id": "e2", "speaker": "manager", "start_sec": 181.0, "quote": "перезвоню в пятницу с расчетом"},
+        {"id": "e3", "speaker": "customer", "start_sec": 189.0, "quote": "Да, договорились"},
+    ],
+}
+
 
 def make(**overrides) -> CallAnalysis:
-    data = {
-        "prompt_version": "test", "model": "test", "call_id": "c1", "lead_id": 100, "manager_user_id": 7,
-        "analyzable": True, "call_type": "first_contact",
-        "outcome": {"value": "callback", "confidence": 0.9, "evidence": ["e2"]},
-        "next_step": {"agreed": True, "what": "перезвонить с расчётом", "when_mentioned": "пятница",
-                      "evidence": ["e2", "e3"]},
-        "objections": [{"type": "price", "handled": "partially", "evidence": ["e1"]}],
-        "evidence": [
-            {"id": "e1", "speaker": "customer", "start_sec": 7.0, "quote": "у вас дороговато"},
-            {"id": "e2", "speaker": "manager", "start_sec": 181.0, "quote": "перезвоню в пятницу с расчетом"},
-            {"id": "e3", "speaker": "customer", "start_sec": 189.0, "quote": "Да, договорились"},
-        ],
-    }
-    data.update(overrides)
-    return CallAnalysis.model_validate(data)
+    meta = {"prompt_version": "test", "model": "test", "call_id": "c1", "lead_id": 100}
+    return CallAnalysis.model_validate({**EXTRACTION, **meta, **overrides})
 
 
 def test_reference_to_missing_evidence_is_rejected():
     with pytest.raises(ValidationError):
-        make(outcome={"value": "callback", "confidence": 0.9, "evidence": ["e999"]})
+        CallExtraction.model_validate({**EXTRACTION, "outcome": {"value": "x", "confidence": 0.9, "evidence": ["e9"]}})
 
 
 def test_quotes_are_checked_against_transcript():
@@ -46,16 +49,20 @@ def test_quotes_are_checked_against_transcript():
 
 
 def test_agreed_next_step_without_crm_task_goes_to_review():
-    routed = route_for_review(make(), SEGMENTS, open_task_lead_ids=set())
+    routed = route_for_review(make(), SEGMENTS, lead_has_open_task=False)
     assert routed.needs_review
-    assert any(r.type == "promise_without_crm_task" for r in routed.risks)
+    assert [r.description for r in routed.risks] == [CRM_GAP_TEXT]
+    # повторный прогон не дублирует риск
+    again = route_for_review(routed, SEGMENTS, lead_has_open_task=False)
+    assert len(again.risks) == 1
 
 
 def test_clean_call_with_crm_task_is_not_escalated():
-    routed = route_for_review(make(), SEGMENTS, open_task_lead_ids={100})
-    assert not routed.needs_review and routed.review_reasons == []
+    routed = route_for_review(make(), SEGMENTS, lead_has_open_task=True)
+    assert not routed.needs_review and routed.review_reasons == [] and routed.risks == []
 
 
 def test_json_schema_is_exportable_for_structured_output():
-    schema = CallAnalysis.model_json_schema()
-    assert "next_step" in schema["properties"] and "evidence" in schema["properties"]
+    schema = CallExtraction.model_json_schema()
+    assert {"next_step", "evidence", "risks"} <= set(schema["properties"])
+    assert "prompt_version" not in schema["properties"]  # метаданные заполняет код, не модель

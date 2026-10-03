@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Разбор звонков продаж</title>
+<meta name="description" content="Демо: LLM извлекает структуру из звонка, код проверяет цитаты и сверяет договорённости с задачами в CRM.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232f5bd3'/><path d='M9 21v-6m5 6V11m5 10v-8m5 8v-4' stroke='white' stroke-width='2.6' stroke-linecap='round'/></svg>">
+<style>
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f0f2f5; --border: #e2e5ea;
+  --text: #16191f; --muted: #5d6573; --faint: #8a919e;
+  --accent: #2f5bd3; --accent-soft: #e8eefc; --on-accent: #ffffff;
+  --llm: #7a3fd1; --llm-soft: #f1eafc; --code: #0f7b6c; --code-soft: #e4f4f1;
+  --ok: #1e7d43; --ok-soft: #e5f5ea; --warn: #9a5b00; --warn-soft: #fff3dc; --bad: #b42318; --bad-soft: #fde8e6;
+  --mark: #fff0a8; --mark-text: #16191f;
+  --radius: 12px; --shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1115; --surface: #171a21; --surface-2: #1e222b; --border: #2a2f3a;
+    --text: #e8eaee; --muted: #a2a9b6; --faint: #737b89;
+    --accent: #7ea2ff; --accent-soft: #1d2741; --on-accent: #0f1115;
+    --llm: #b991ff; --llm-soft: #2a2140; --code: #4fd1bc; --code-soft: #14302c;
+    --ok: #5fd08a; --ok-soft: #14301f; --warn: #f2b53c; --warn-soft: #33270f; --bad: #ff8a80; --bad-soft: #3a1714;
+    --mark: #5c4d12; --mark-text: #fff6cf; --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
+header { padding: 32px 0 20px; }
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 10px; letter-spacing: -.01em; }
+.lead { color: var(--muted); max-width: 820px; margin: 0; }
+.toplinks { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; font-size: 14px; align-items: center; }
+.status { display: inline-flex; max-width: 100%; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.dot.on { background: var(--ok); }
+.legend { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 2px 7px;
+  border-radius: 6px; vertical-align: middle; white-space: nowrap; }
+.tag.llm { color: var(--llm); background: var(--llm-soft); } .tag.code { color: var(--code); background: var(--code-soft); }
+.grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 20px; align-items: start; padding-bottom: 28px; }
+@media (max-width: 920px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.panel > .hd { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.panel > .hd h2 { font-size: 16px; margin: 0; }
+.panel > .bd { padding: 16px; }
+.sticky { position: sticky; top: 16px; }
+@media (max-width: 920px) { .sticky { position: static; } }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tab { border: 1px solid var(--border); background: var(--surface-2); color: var(--text); border-radius: 8px;
+  padding: 7px 11px; font: inherit; font-size: 13.5px; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.desc { color: var(--muted); font-size: 14px; margin: 0 0 12px; min-height: 22px; }
+textarea { width: 100%; min-height: 300px; resize: vertical; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface-2); color: var(--text); padding: 12px; font: 13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+textarea:focus, .tab:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hint { font-size: 13px; color: var(--faint); margin: 8px 0 0; }
+.check { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0 4px; font-size: 14px; cursor: pointer; }
+.check input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.btn { border: 1px solid transparent; border-radius: 9px; padding: 10px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--on-accent); }
+.btn.secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.err { margin-top: 12px; padding: 10px 12px; border-radius: 9px; background: var(--bad-soft); color: var(--bad); font-size: 14px; display: none; }
+.empty { color: var(--muted); padding: 40px 16px; text-align: center; }
+.cards { display: grid; gap: 14px; }
+.card { border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: var(--surface); }
+.card h3 { font-size: 14px; margin: 0 0 10px; display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.card h3 .t { color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; font-size: 12px; }
+.banner { border-radius: 10px; padding: 14px; display: grid; gap: 6px; }
+.banner.ok { background: var(--ok-soft); color: var(--ok); } .banner.warn { background: var(--warn-soft); color: var(--warn); }
+.banner.skip { background: var(--surface-2); color: var(--muted); }
+.banner b { font-size: 15px; } .banner ul { margin: 0; padding-left: 20px; color: var(--text); font-size: 14px; }
+.banner .row { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.summary { margin: 0 0 12px; font-size: 15px; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; font-size: 14px; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; }
+.conf { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12.5px; margin-left: 6px; }
+.bar { width: 54px; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; display: inline-block; }
+.bar i { display: block; height: 100%; background: var(--accent); }
+.ev { display: inline-flex; gap: 4px; flex-wrap: wrap; margin-left: 4px; vertical-align: middle; }
+.chip { border: 1px solid var(--border); background: var(--surface-2); color: var(--muted); border-radius: 6px; padding: 0 6px;
+  font: 600 12px/20px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; cursor: pointer; }
+.chip.bad { color: var(--bad); border-color: var(--bad); background: var(--bad-soft); }
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.q4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 560px) { .q4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.qcell { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.qcell > span:first-child { display: block; color: var(--muted); font-size: 12px; margin-bottom: 3px; }
+.pill { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: 12.5px; font-weight: 600; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); } .pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); } .pill.mute { background: var(--surface-2); color: var(--muted); }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 14px; }
+.list li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.evlist li { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); cursor: pointer; }
+.evlist li:hover { outline: 1px solid var(--accent); }
+.evlist .meta { font-size: 12.5px; color: var(--muted); }
+.transcript { display: grid; gap: 6px; max-height: 460px; overflow: auto; }
+.seg { display: grid; grid-template-columns: 48px 1fr; gap: 10px; padding: 8px 10px; border-radius: 8px; font-size: 14px; transition: background .2s; }
+.seg .ts { color: var(--faint); font: 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.seg .who { font-weight: 600; font-size: 12.5px; }
+.seg.manager .who { color: var(--accent); } .seg.customer .who { color: var(--code); }
+.seg.hl { background: var(--accent-soft); }
+mark { background: var(--mark); color: var(--mark-text); border-radius: 3px; padding: 0 1px; }
+.how { padding: 0 0 36px; }
+.steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 12px 0 14px; }
+@media (max-width: 920px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .steps { grid-template-columns: minmax(0, 1fr); } }
+.step { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+.step b { display: block; margin: 6px 0 2px; }
+.step p { margin: 0; color: var(--muted); }
+.fine { color: var(--faint); font-size: 13px; margin: 0; }
+.meta-line { color: var(--faint); font-size: 12.5px; margin-top: 4px; word-break: break-word; }
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -2px; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Разбор звонков отдела продаж</h1>
+    <p class="lead">LLM извлекает из разговора итог, следующий шаг, возражения и риски — строго по&nbsp;JSON-схеме, каждый вывод со&nbsp;ссылкой на&nbsp;цитату. Код проверяет результат: цитаты сверяются с&nbsp;транскриптом, договорённости — с&nbsp;задачами в&nbsp;CRM, спорное уходит человеку. Выводов о&nbsp;сотрудниках система не&nbsp;делает.</p>
+    <div class="toplinks">
+      <span class="status" id="status"><span class="dot" id="statusDot"></span><span id="statusText">Проверяю сервер…</span></span>
+      <span class="legend"><span class="tag llm">LLM</span> заполняет модель <span class="tag code">КОД</span> считает код</span>
+      <a href="https://github.com/04NVG/citycar-sales-call-analysis" target="_blank" rel="noopener">Код на GitHub</a>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="panel sticky" aria-labelledby="callTitle">
+      <div class="hd"><h2 id="callTitle">Звонок</h2><span class="tag code">STT-формат</span></div>
+      <div class="bd">
+        <div class="tabs" role="tablist" id="tabs"></div>
+        <p class="desc" id="desc"></p>
+        <label for="transcript" class="hint" style="display:block;margin:0 0 6px">Транскрипт: <code>[мм:сс] Менеджер: текст</code></label>
+        <textarea id="transcript" spellcheck="false"></textarea>
+        <p class="hint" id="editHint">Попробуйте изменить реплику, на&nbsp;которую ссылается разбор, — проверка цитат это заметит.</p>
+        <label class="check"><input type="checkbox" id="hasTask"><span>По&nbsp;сделке есть открытая задача в&nbsp;amoCRM<br><span class="hint" style="margin:0">В&nbsp;продакшене это приходит из&nbsp;CRM Sync, здесь — переключатель</span></span></label>
+        <div class="actions">
+          <button class="btn primary" id="runCached">Показать разбор</button>
+          <button class="btn secondary" id="runLive">Разобрать моделью сейчас</button>
+        </div>
+        <div class="err" id="err" role="alert"></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="resTitle">
+      <div class="hd"><h2 id="resTitle">Результат</h2><span class="meta-line" id="resMeta"></span></div>
+      <div class="bd" id="result"><div class="empty">Выберите звонок и&nbsp;нажмите «Показать разбор».</div></div>
+    </section>
+  </main>
+
+  <section class="how" aria-labelledby="howTitle">
+    <h2 id="howTitle" style="font-size:18px;margin:0">Как это устроено</h2>
+    <div class="steps">
+      <div class="step"><span class="tag code">КОД</span><b>Транскрипт</b><p>Сегменты «кто, когда, что сказал» — как их отдаёт STT с&nbsp;диаризацией.</p></div>
+      <div class="step"><span class="tag llm">LLM</span><b>Извлечение</b><p>Claude API, structured output по&nbsp;Pydantic-схеме. Свободного текста нет, только поля и&nbsp;ссылки на&nbsp;цитаты.</p></div>
+      <div class="step"><span class="tag code">КОД</span><b>Проверка</b><p>Цитата должна дословно найтись у&nbsp;того же спикера рядом с&nbsp;таймкодом. Ссылки на&nbsp;несуществующие цитаты отклоняет схема.</p></div>
+      <div class="step"><span class="tag code">КОД</span><b>Маршрутизация</b><p>Нет задачи в&nbsp;CRM при&nbsp;согласованном шаге, низкая уверенность, серьёзный риск или&nbsp;непроверенная цитата — на&nbsp;ревью человеку.</p></div>
+    </div>
+    <p class="fine">Все звонки синтетические. Сохранённые разборы сгенерированы Claude в&nbsp;той же схеме и&nbsp;проходят те же проверки. Живой режим вызывает Claude API, если на&nbsp;сервере настроен ключ. Это демо одного шага из&nbsp;архитектуры тестового задания, а&nbsp;не&nbsp;продакшен-система.</p>
+  </section>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const L = {
+  call_type: {first_contact: "первичный", follow_up: "повторный", not_sales: "не продажи", voicemail: "автоответчик"},
+  outcome: {meeting_set: "назначена встреча", callback: "договорились созвониться", thinking: "клиент думает", refused: "отказ", other: "другое"},
+  asked: {asked: ["выяснено", "ok"], not_asked: ["не выяснено", "warn"], unclear: ["неясно", "mute"]},
+  qual: {need: "Потребность", budget: "Бюджет", timeline: "Сроки", decision_maker: "Кто решает"},
+  objection: {price: "цена", timing: "сроки", competitor: "конкурент", trust: "доверие", need: "нет потребности", other: "другое"},
+  handled: {yes: ["отработано", "ok"], partially: ["частично", "warn"], no: ["не отработано", "bad"]},
+  item: {greeting_and_name: "Приветствие и имя", needs_discovery: "Выявление потребности", offer_presented: "Предложение",
+         objection_handling: "Работа с возражениями", next_step_fixed: "Следующий шаг зафиксирован"},
+  status: {done: ["да", "ok"], missed: ["нет", "bad"], "n/a": ["не применимо", "mute"]},
+  risk: {promise_without_followup: "обещание без задачи", customer_unhappy: "клиент недоволен", lost_to_competitor: "уход к конкуренту",
+         manager_incorrect_info: "неверная информация", rude_or_pressure: "грубость / давление", other: "другое"},
+  severity: {low: ["низкий", "mute"], medium: ["средний", "warn"], high: ["высокий", "bad"]},
+};
+const CRM_GAP = "Добавлено кодом: договорённость есть в разговоре, задачи в CRM нет";
+let samples = [], current = null, live = false, last = null;
+
+const pill = ([text, kind]) => `<span class="pill ${kind}">${esc(text)}</span>`;
+const mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+function chips(ids) {
+  if (!ids || !ids.length) return "";
+  const bad = new Set(last?.analysis.unverified_evidence || []);
+  return `<span class="ev">${ids.map((id) => `<button class="chip ${bad.has(id) ? "bad" : ""}" data-ev="${esc(id)}" title="Показать цитату">${esc(id)}</button>`).join("")}</span>`;
+}
+const conf = (c) => `<span class="conf"><span class="bar"><i style="width:${Math.round(c * 100)}%"></i></span>${Math.round(c * 100)}%</span>`;
+const card = (title, tag, body) => `<div class="card"><h3><span class="t">${title}</span><span class="tag ${tag === "КОД" ? "code" : "llm"}">${tag}</span></h3>${body}</div>`;
+
+async function init() {
+  try {
+    const [h, s] = await Promise.all([fetch("/api/health").then((r) => r.json()), fetch("/api/samples").then((r) => r.json())]);
+    live = h.live; samples = s;
+    $("statusDot").classList.toggle("on", live);
+    $("statusText").textContent = live ? `Живой режим: ${h.model}` : "Демо-режим: сохранённые разборы, ключ API не подключён";
+  } catch (e) {
+    $("statusText").textContent = "Сервер недоступен";
+  }
+  renderTabs();
+  select(samples[0]?.id || "own");
+}
+
+function renderTabs() {
+  const items = [...samples.map((s) => [s.id, s.title]), ["own", "Свой звонок"]];
+  $("tabs").innerHTML = items.map(([id, t]) => `<button class="tab" role="tab" data-id="${esc(id)}" aria-selected="false">${esc(t)}</button>`).join("");
+  $("tabs").querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => select(b.dataset.id)));
+}
+
+function select(id) {
+  current = samples.find((s) => s.id === id) || null;
+  $("tabs").querySelectorAll(".tab").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.id === id)));
+  if (current) {
+    $("desc").textContent = current.description;
+    $("transcript").value = current.transcript;
+    $("hasTask").checked = current.lead_has_open_task;
+    $("editHint").style.display = "";
+  } else {
+    $("desc").textContent = "Вставьте свой транскрипт. Разбор делает модель, поэтому нужен живой режим.";
+    $("transcript").value = "[00:00] Менеджер: \n[00:05] Клиент: ";
+    $("hasTask").checked = false;
+    $("editHint").style.display = "none";
+  }
+  $("runCached").disabled = !current;
+  $("runLive").disabled = !live;
+  $("runLive").title = live ? "" : "На сервере не настроен ANTHROPIC_API_KEY";
+  $("err").style.display = "none";
+  if (current) run("cached");
+  else { last = null; $("result").innerHTML = `<div class="empty">${live ? "Нажмите «Разобрать моделью сейчас»." : "Живой режим не подключён: для своего звонка нужен ключ API на сервере."}</div>`; $("resMeta").textContent = ""; }
+}
+
+async function run(mode) {
+  const btn = mode === "live" ? $("runLive") : $("runCached");
+  const label = btn.textContent;
+  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span>${mode === "live" ? "Модель думает…" : "Проверяю…"}`;
+  $("err").style.display = "none";
+  try {
+    const r = await fetch("/api/analyze", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({transcript: $("transcript").value, mode, sample_id: current?.id ?? null, lead_has_open_task: $("hasTask").checked})});
+    const data = await r.json();
+    if (!r.ok) throw new Error(typeof data.detail === "string" ? data.detail : "Некорректный запрос (проверьте длину и формат транскрипта)");
+    last = data; render();
+  } catch (e) {
+    $("err").textContent = e.message; $("err").style.display = "block";
+  } finally {
+    btn.textContent = label; btn.disabled = mode === "live" ? !live : !current;
+  }
+}
+
+function render() {
+  const a = last.analysis, segs = last.segments, bad = new Set(a.unverified_evidence);
+  const u = last.usage ? ` · ${last.usage.input_tokens}→${last.usage.output_tokens} ток.` : "";
+  $("resMeta").textContent = `${last.source === "live" ? "живой разбор" : "сохранённый разбор"} · ${a.model} · prompt ${a.prompt_version}${u}`;
+  const out = [];
+
+  if (!a.analyzable) {
+    out.push(`<div class="banner skip"><div class="row"><b>Не анализируется: ${esc(a.skip_reason || "нет разговора")}</b><span class="tag code">КОД</span></div><div>Такие звонки отсекаются и не попадают в метрики менеджера.</div></div>`);
+  } else if (a.needs_review) {
+    out.push(`<div class="banner warn"><div class="row"><b>Нужна проверка человеком</b><span class="tag code">КОД</span></div><ul>${a.review_reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></div>`);
+  } else {
+    out.push(`<div class="banner ok"><div class="row"><b>Можно в отчёт без ревью</b><span class="tag code">КОД</span></div><div>Цитаты подтверждены, договорённость отражена в CRM, серьёзных рисков нет.</div></div>`);
+  }
+
+  let main = `<p class="summary">${esc(a.summary)}</p><dl class="kv"><dt>Тип звонка</dt><dd>${esc(L.call_type[a.call_type])}</dd>`;
+  if (a.outcome) main += `<dt>Итог</dt><dd>${esc(L.outcome[a.outcome.value] || a.outcome.value)}${conf(a.outcome.confidence)}${chips(a.outcome.evidence)}</dd>`;
+  if (a.customer_intent) main += `<dt>Чего хочет клиент</dt><dd>${esc(a.customer_intent.value)}${conf(a.customer_intent.confidence)}${chips(a.customer_intent.evidence)}</dd>`;
+  out.push(card("Разговор", "LLM", main + "</dl>"));
+
+  if (a.analyzable) {
+    const ns = a.next_step;
+    const crm = $("hasTask").checked ? pill(["задача есть", "ok"]) : pill(["задачи нет", ns.agreed ? "bad" : "mute"]);
+    out.push(card("Следующий шаг", "LLM", `<dl class="kv"><dt>Согласован</dt><dd>${ns.agreed ? pill(["да", "ok"]) : pill(["нет", "warn"])}${chips(ns.evidence)}</dd>
+      ${ns.what ? `<dt>Что</dt><dd>${esc(ns.what)}</dd>` : ""}${ns.when_mentioned ? `<dt>Когда</dt><dd>«${esc(ns.when_mentioned)}»</dd>` : ""}
+      <dt>В amoCRM <span class="tag code">КОД</span></dt><dd>${crm}</dd></dl>`));
+  }
+
+  if (a.qualification) {
+    out.push(card("Квалификация", "LLM", `<div class="q4">${Object.entries(L.qual).map(([k, t]) => `<div class="qcell"><span>${t}</span>${pill(L.asked[a.qualification[k]])}</div>`).join("")}</div>`));
+  }
+  if (a.objections.length) {
+    out.push(card("Возражения", "LLM", `<ul class="list">${a.objections.map((o) => `<li><b>${esc(L.objection[o.type])}</b>${pill(L.handled[o.handled])}${chips(o.evidence)}</li>`).join("")}</ul>`));
+  }
+  if (a.script_checklist.length) {
+    out.push(card("Чек-лист скрипта", "LLM", `<ul class="list">${a.script_checklist.map((c) => `<li>${pill(L.status[c.status])}<span>${esc(L.item[c.item])}</span>${chips(c.evidence)}</li>`).join("")}</ul>`));
+  }
+  if (a.risks.length) {
+    out.push(card("Риски", "LLM + КОД", `<ul class="list">${a.risks.map((r) => `<li>${pill(L.severity[r.severity])}<b>${esc(L.risk[r.type])}</b>${r.description === CRM_GAP ? '<span class="tag code">КОД</span>' : ""}<span style="color:var(--muted)">${esc(r.description === CRM_GAP ? "договорённость есть в разговоре, задачи в CRM нет" : r.description)}</span>${chips(r.evidence)}</li>`).join("")}</ul>`));
+  }
+
+  if (a.evidence.length) {
+    out.push(card("Доказательства", "КОД", `<ul class="list evlist">${a.evidence.map((e) => `<li data-ev="${esc(e.id)}">
+      <span>${bad.has(e.id) ? pill(["не найдено", "bad"]) : pill(["✓ найдено", "ok"])}</span>
+      <span><span class="meta">${esc(e.id)} · ${e.speaker === "manager" ? "менеджер" : "клиент"} · ${mmss(e.start_sec)}</span><br>«${esc(e.quote)}»</span></li>`).join("")}</ul>
+      <p class="hint">Цитата считается найденной, если она дословно есть в реплике того же спикера рядом с таймкодом.</p>`));
+  }
+
+  out.push(card("Транскрипт", "КОД", `<div class="transcript" id="segs">${segs.map((s, i) => `<div class="seg ${s.speaker}" data-i="${i}"><span class="ts">${mmss(s.start)}</span><span><span class="who">${s.speaker === "manager" ? "Менеджер" : "Клиент"}</span><br><span class="txt">${esc(s.text)}</span></span></div>`).join("")}</div>`));
+
+  $("result").innerHTML = `<div class="cards">${out.join("")}</div>`;
+  $("result").querySelectorAll("[data-ev]").forEach((el) => el.addEventListener("click", (ev) => { ev.stopPropagation(); showEvidence(el.dataset.ev); }));
+}
+
+const norm = (t) => t.toLowerCase().replace(/ё/g, "е");
+function showEvidence(id) {
+  const e = last.analysis.evidence.find((x) => x.id === id);
+  if (!e) return;
+  const segEls = [...document.querySelectorAll("#segs .seg")];
+  segEls.forEach((el, i) => { el.classList.remove("hl"); el.querySelector(".txt").innerHTML = esc(last.segments[i].text); });
+  let best = -1, dist = Infinity;
+  last.segments.forEach((s, i) => {
+    if (s.speaker !== e.speaker) return;
+    const d = e.start_sec < s.start ? s.start - e.start_sec : Math.max(0, e.start_sec - s.end);
+    if (d < dist) { dist = d; best = i; }
+  });
+  if (best < 0) return;
+  const el = segEls[best], text = last.segments[best].text, at = norm(text).indexOf(norm(e.quote));
+  if (at >= 0) el.querySelector(".txt").innerHTML = esc(text.slice(0, at)) + "<mark>" + esc(text.slice(at, at + e.quote.length)) + "</mark>" + esc(text.slice(at + e.quote.length));
+  el.classList.add("hl");
+  el.scrollIntoView({behavior: "smooth", block: "center"});
+}
+
+$("runCached").addEventListener("click", () => run("cached"));
+$("runLive").addEventListener("click", () => run("live"));
+$("hasTask").addEventListener("change", () => { if (last && current && last.source === "cached") run("cached"); });
+init();
+</script>
+</body>
+</html>

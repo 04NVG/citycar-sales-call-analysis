@@ -1,7 +1,9 @@
-"""Схема результата анализа звонка (structured output для LLM) и детерминированные проверки.
+"""Схема анализа звонка и детерминированные проверки.
 
-LLM возвращает JSON по CallAnalysis.model_json_schema(); всё, что ниже схемы, — обычный код:
-сверка цитат с транскриптом, сверка «договорились о следующем шаге» с задачами в CRM, маршрутизация на ревью.
+CallExtraction — то, что заполняет LLM (structured output по JSON Schema этой модели).
+CallAnalysis   — CallExtraction + метаданные и решение о ревью, которые добавляет код.
+Всё ниже схем — обычный код: сверка цитат с транскриптом, сверка «договорились о шаге» с задачами в CRM,
+маршрутизация на ревью.
 """
 import re
 from typing import Literal
@@ -12,23 +14,23 @@ Asked = Literal["asked", "not_asked", "unclear"]
 
 
 class Evidence(BaseModel):
-    id: str
+    id: str = Field(description="e1, e2, ...")
     speaker: Literal["manager", "customer"]
-    start_sec: float = Field(ge=0)
-    quote: str = Field(min_length=3)
+    start_sec: float = Field(ge=0, description="Время начала реплики, из которой взята цитата")
+    quote: str = Field(min_length=3, description="Дословный фрагмент реплики, без перефразирования")
 
 
 class Claim(BaseModel):
     value: str
     confidence: float = Field(ge=0, le=1)
-    evidence: list[str] = Field(min_length=1)
+    evidence: list[str] = Field(description="id из evidence")
 
 
 class NextStep(BaseModel):
-    agreed: bool
-    what: str | None = None
-    when_mentioned: str | None = None
-    evidence: list[str] = []
+    agreed: bool = Field(description="Клиент явно согласился на конкретный следующий шаг")
+    what: str | None
+    when_mentioned: str | None = Field(description="Срок так, как он прозвучал в разговоре")
+    evidence: list[str]
 
 
 class Qualification(BaseModel):
@@ -41,41 +43,37 @@ class Qualification(BaseModel):
 class Objection(BaseModel):
     type: Literal["price", "timing", "competitor", "trust", "need", "other"]
     handled: Literal["yes", "partially", "no"]
-    evidence: list[str] = Field(min_length=1)
+    evidence: list[str]
 
 
 class ChecklistItem(BaseModel):
-    item: str
+    item: Literal["greeting_and_name", "needs_discovery", "offer_presented", "objection_handling", "next_step_fixed"]
     status: Literal["done", "missed", "n/a"]
-    evidence: list[str] = []
+    evidence: list[str]
 
 
 class Risk(BaseModel):
-    type: str
+    type: Literal["promise_without_followup", "customer_unhappy", "lost_to_competitor", "manager_incorrect_info",
+                  "rude_or_pressure", "other"]
     severity: Literal["low", "medium", "high"]
-    evidence: list[str] = []
+    description: str
+    evidence: list[str]
 
 
-class CallAnalysis(BaseModel):
-    schema_version: Literal["call_analysis.v1"] = "call_analysis.v1"
-    prompt_version: str
-    model: str
-    call_id: str
-    lead_id: int | None = None
-    manager_user_id: int | None = None
-    analyzable: bool
-    skip_reason: str | None = None
+class CallExtraction(BaseModel):
+    """Ответ модели. Никаких выводов о сотруднике — только то, что слышно в разговоре."""
+    analyzable: bool = Field(description="false для автоответчика, обрыва, не-продажного звонка")
+    skip_reason: str | None
     call_type: Literal["first_contact", "follow_up", "not_sales", "voicemail"]
-    customer_intent: Claim | None = None
-    outcome: Claim | None = None
+    summary: str = Field(description="1–2 предложения: о чём разговор и чем закончился")
+    customer_intent: Claim | None
+    outcome: Claim | None
     next_step: NextStep
-    qualification: Qualification | None = None
-    objections: list[Objection] = []
-    script_checklist: list[ChecklistItem] = []
-    risks: list[Risk] = []
-    evidence: list[Evidence] = []
-    needs_review: bool = False
-    review_reasons: list[str] = []
+    qualification: Qualification | None
+    objections: list[Objection]
+    script_checklist: list[ChecklistItem]
+    risks: list[Risk]
+    evidence: list[Evidence]
 
     def referenced_ids(self) -> set[str]:
         refs = set(self.next_step.evidence)
@@ -95,17 +93,29 @@ class CallAnalysis(BaseModel):
         return self
 
 
+class CallAnalysis(CallExtraction):
+    schema_version: Literal["call_analysis.v1"] = "call_analysis.v1"
+    prompt_version: str
+    model: str
+    call_id: str
+    lead_id: int | None = None
+    manager_user_id: int | None = None
+    unverified_evidence: list[str] = []
+    needs_review: bool = False
+    review_reasons: list[str] = []
+
+
 def _norm(text: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", text.lower().replace("ё", "е"))).strip()
 
 
-def unverified_evidence(analysis: CallAnalysis, segments: list[dict], window_sec: float = 10.0) -> list[str]:
-    """Цитата считается подтверждённой, если она дословно (после нормализации) есть в реплике
-    того же спикера рядом с указанным таймкодом. segments: [{speaker, start, end, text}] из STT."""
+def unverified_evidence(analysis: CallExtraction, segments: list[dict], window_sec: float = 10.0) -> list[str]:
+    """Цитата подтверждена, если она дословно (после нормализации) есть в реплике того же спикера
+    рядом с указанным таймкодом. segments: [{speaker, start, end, text}] из STT."""
     bad = []
     for ev in analysis.evidence:
         quote = _norm(ev.quote)
-        ok = any(
+        ok = bool(quote) and any(
             seg["speaker"] == ev.speaker
             and seg["start"] - window_sec <= ev.start_sec <= seg["end"] + window_sec
             and quote in _norm(seg["text"])
@@ -116,24 +126,29 @@ def unverified_evidence(analysis: CallAnalysis, segments: list[dict], window_sec
     return bad
 
 
-def crm_followup_gap(analysis: CallAnalysis, open_task_lead_ids: set[int]) -> bool:
+def crm_followup_gap(analysis: CallAnalysis, lead_has_open_task: bool) -> bool:
     """В разговоре следующий шаг согласован, а открытой задачи по сделке в CRM нет."""
-    return analysis.next_step.agreed and analysis.lead_id is not None and analysis.lead_id not in open_task_lead_ids
+    return analysis.analyzable and analysis.next_step.agreed and not lead_has_open_task
 
 
-def route_for_review(analysis: CallAnalysis, segments: list[dict], open_task_lead_ids: set[int],
+def route_for_review(analysis: CallAnalysis, segments: list[dict], lead_has_open_task: bool,
                      min_confidence: float = 0.6) -> CallAnalysis:
     """Детерминированные правила: что уходит человеку. Confidence модели — только сигнал маршрутизации."""
-    reasons = list(analysis.review_reasons)
-    if bad := unverified_evidence(analysis, segments):
-        reasons.append(f"цитаты не найдены в транскрипте: {bad}")
-    low = [c for c in (analysis.customer_intent, analysis.outcome) if c and c.confidence < min_confidence]
-    if low:
+    reasons: list[str] = []
+    bad = unverified_evidence(analysis, segments)
+    if bad:
+        reasons.append(f"цитаты не найдены в транскрипте: {', '.join(bad)}")
+    if any(c and c.confidence < min_confidence for c in (analysis.customer_intent, analysis.outcome)):
         reasons.append("низкая уверенность модели")
     if any(r.severity == "high" for r in analysis.risks):
         reasons.append("риск высокой серьёзности")
-    risks = list(analysis.risks)
-    if crm_followup_gap(analysis, open_task_lead_ids):
-        risks.append(Risk(type="promise_without_crm_task", severity="high", evidence=analysis.next_step.evidence))
-        reasons.append("следующий шаг согласован, задачи в CRM нет")
-    return analysis.model_copy(update={"risks": risks, "needs_review": bool(reasons), "review_reasons": reasons})
+    risks = [r for r in analysis.risks if r.description != CRM_GAP_TEXT]
+    if crm_followup_gap(analysis, lead_has_open_task):
+        risks.append(Risk(type="promise_without_followup", severity="high", description=CRM_GAP_TEXT,
+                          evidence=analysis.next_step.evidence))
+        reasons.append("следующий шаг согласован, а открытой задачи в CRM нет")
+    return analysis.model_copy(update={"risks": risks, "unverified_evidence": bad,
+                                       "needs_review": bool(reasons), "review_reasons": reasons})
+
+
+CRM_GAP_TEXT = "Добавлено кодом: договорённость есть в разговоре, задачи в CRM нет"
